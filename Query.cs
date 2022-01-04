@@ -1,5 +1,6 @@
 ﻿using GreenDonut;
 using HotChocolate;
+using HotChocolate.Fetching;
 using HotChocolate.Resolvers;
 using HotChocolate.Types;
 using System.Collections.Generic;
@@ -29,8 +30,11 @@ namespace hcresolver
             this.colorFilter = colorFilter;
         }
 
-        public async Task<Pill> GetPills([Service] Matrix matrix, IResolverContext context) =>
-            await matrix.RedOrBlue(context, colorFilter).LoadAsync(this.x);
+        public async Task<Pill> GetPills(
+            [Service] Matrix matrix,
+            IResolverContext context,
+            [Service] IDataLoaderRegistry reg
+        ) => await matrix.RedOrBlue(context, colorFilter).LoadAsync(this.x);
     }
 
     public class Matrix
@@ -45,7 +49,7 @@ namespace hcresolver
                 (keys, token) =>
                 {
                     var result = pills.Where(
-                        x => keys.Contains(x.Id) && (color is not null ? x.Color == color : true)
+                        x => keys.Contains(x.Id) && (color is null || x.Color == color)
                     );
                     return Task.FromResult(result.ToDictionary(x => x.Id).AsReadOnly());
                 },
